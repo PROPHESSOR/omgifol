@@ -7,13 +7,17 @@ modern game engine.
 """
 
 # python
-import math, argparse, os, sys
+import math, argparse, os, sys, json
 
 # PIL
 from PIL import Image
 
 # local
 from omg import txdef, wad, mapedit, util
+
+JSON = {
+    'faces': []
+}
 
 # Constants
 DEFAULT_MTL_TEXT = """Ka 1.000000 1.000000 1.000000
@@ -51,6 +55,7 @@ class Polygon:
         self.texture = texture
         self.faces = []
         self.textureCoords = []
+        self.payload = { 'type': None }
 
     def getFaces(self):
         return self.faces
@@ -103,6 +108,11 @@ class Polygon:
 
 def objmap(wad, name, filename, textureNames, textureSizes, centerVerts):
     edit = mapedit.MapEditor(wad.maps[name])
+
+    JSON = {
+        'map': name,
+        'faces': [],
+    }
 
     # first lets get into the proper coordinate system
     v = edit.vertexes[0]
@@ -173,9 +183,20 @@ def objmap(wad, name, filename, textureNames, textureSizes, centerVerts):
                     out.write("vt %g %g\n" % (u, v))
                     tindexes.append(ti)
                     ti += 1
+
                 out.write(
                         "f %s\n" % " ".join([
                             "%s/%s" % (v,t) for v,t in zip(vindexes,tindexes)]))
+
+                JSON['faces'].append({
+                    'vertices': [vertexes[v - 1] + t for v,t in zip(vindexes,textureCoords)],
+                    'texture': poly.texture,
+                    'linedef': poly.payload['type'] and poly.payload['payload']
+                })
+
+    with open(filename + '.json', "w") as out:
+        json.dump(JSON, out, indent=4)
+
 
 def _polygons_with_line_definitions(edit, vi, vertexes, textureSizes, polys):
     for line in edit.linedefs:
@@ -287,6 +308,27 @@ def _polygons_with_line_definitions(edit, vi, vertexes, textureSizes, polys):
 def _poly_from_components(side1, sector1, textureSizes, width, line,
     lower_left, lower_right, upper_right, upper_left):
     poly = Polygon(side1.tx_mid)
+    poly.payload = {
+        'type': 'line',
+        'payload': {
+            'vx_a': line.vx_a,
+            'vx_b': line.vx_b,
+            'flags': line.flags,
+            'action': line.action,
+            'tag': line.tag,
+            'front': line.front,
+            'back': line.back,
+            'impassable': line.impassable,
+            'block_monsters': line.block_monsters,
+            'two_sided': line.two_sided,
+            'upper_unpeg': line.upper_unpeg,
+            'lower_unpeg': line.lower_unpeg,
+            'secret': line.secret,
+            'block_sound': line.block_sound,
+            'invisible': line.invisible,
+            'automap': line.automap,
+        }
+    }
     height = sector1.z_ceil - sector1.z_floor
     tsize = textureSizes.get(side1.tx_mid, (64,64))
     tw = width/float(tsize[0])
@@ -414,5 +456,12 @@ edit = mapedit.MapEditor(map)
 """
 
 if __name__ == "__main__":
+    class tmp():
+        source_wad = '/home/prophessor/tmp/omgifol/demo/doom2.wad'
+        output = '/home/prophessor/tmp/omgifol/demo'
+        list = False
+        maps = []
+
+
     main()
 
