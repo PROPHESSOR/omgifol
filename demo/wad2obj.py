@@ -327,8 +327,7 @@ def writemtl(wad):
     for name,texture_definition in t.items():
         image = Image.new(
                 'RGBA',
-                (texture_definition.width, texture_definition.height),
-                'WHITE')
+                (texture_definition.width, texture_definition.height))
         # print "making %s at %dx%d" % (name, txdef.width, txdef.height)
         for patchdef in texture_definition.patches:
             # sometimes there are lower case letters!?
@@ -339,14 +338,9 @@ def writemtl(wad):
                 continue
             patch = wad.patches[patchdef.name]
             stamp = patch.to_Image()
-            image.paste(stamp, (patchdef.x,patchdef.y))
 
-        pixdata = image.load()
+            image.paste(stamp, (patchdef.x,patchdef.y), mask=stamp)
 
-        for y in xrange(image.size[1]):
-            for x in xrange(image.size[0]):
-                if pixdata[x, y] == (255, 0, 255, 255):
-                    pixdata[x, y] = (255, 0, 255, 0)
         image.save(name+".png")
         textureSizes[name] = image.size
 

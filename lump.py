@@ -182,6 +182,15 @@ class Graphic(Lump):
                 # Another attribute is missing, re-raising the error
                 raise
         im.putpalette(self.palette.save_bytes)
+
+        im = im.convert('RGBA')
+        pixdata = im.load()
+
+        for y in xrange(im.size[1]):
+                for x in xrange(im.size[0]):
+                    if pixdata[x, y] == (255, 0, 255, 255):
+                        pixdata[x, y] = (255, 0, 255, 0)
+
         return im
 
     def from_Image(self, im, translate=False):
